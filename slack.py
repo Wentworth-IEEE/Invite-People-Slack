@@ -20,6 +20,7 @@ if not os.path.isfile(csv_file):
 # Get the emails from the csv file
 # Doesn't have any sort of validation that these are emails
 # The Slack library will just throw an exception in that case `\_O_/`
+names = []
 emails = []
 with open(csv_file, 'r') as csvfile:
     reader = csv.reader(csvfile)  # Don't include header
@@ -28,6 +29,7 @@ with open(csv_file, 'r') as csvfile:
         if is_header:
             is_header = False
             continue
+        names.append(row[0])   # Col 0 is where names are
         emails.append(row[1])  # Col 1 is where the emails are
 
 # Get API Token from environment variable
@@ -39,10 +41,18 @@ if 'SLACK_API_TOKEN' not in os.environ:
 else:
     slack_api_token = os.environ['SLACK_API_TOKEN']
 
+number_invited = 0
 # Invite all people that we can
-for email in emails:
+for name, email in zip(names, emails):
     try:
         invite('ieee-wit', slack_api_token, email)
-        print('Invited ' + email)
+        print('Invited {} ({})'.format(name, email))
+        number_invited += 1
     except Exception as e:
-        print(email + ' failed with ' + e.__class__.__name__ + '.')
+        if email == '':
+            print('{} did not list an email.'.format(name))
+        else:
+            err = e.__class__.__name__
+            print('{} ({}) failed with {}.'.format(name, email, err))
+
+print('New people invited: {}'.format(number_invited))
